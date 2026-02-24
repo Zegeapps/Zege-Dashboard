@@ -1,0 +1,23 @@
+/* AppLayout.module.css
+   Mobile-first centered container
+   ------------------------------------------------- */
+.container {
+    width: 100%;
+    max-width: 500px;
+    min-height: 100vh;
+
+    /* Centre horizontally within the flex #root */
+    margin-inline: auto;
+
+    background-color: #ffffff;
+
+    /* Prevent content from pushing outside the container */
+    overflow-x: hidden;
+
+    /* Subtle elevation on desktop so the white panel lifts off the grey bg */
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.06);
+
+    /* Column flex so children can use flex-grow to fill height */
+    display: flex;
+    flex-direction: column;
+}

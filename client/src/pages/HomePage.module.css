@@ -1,0 +1,85 @@
+/* ── Outer content area ─────────────────────────── */
+.content {
+    flex: 1;
+    background-color: #F3F3F3;
+    padding: 24px 20px;
+}
+
+/* ── Section title ──────────────────────────────── */
+.sectionTitle {
+    font-family: 'Manrope', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    color: #0d0d0d;
+    margin-bottom: 16px;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ── Overview card ──────────────────────────────── */
+.card {
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+/* ── 3-column stats row ─────────────────────────── */
+.statsRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.statItem {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.statNumber {
+    font-family: 'Manrope', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: #013064;
+    line-height: 1;
+}
+
+.statLabel {
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    color: #6b7280;
+    line-height: 1;
+}
+
+/* ── Blue highlight bar ─────────────────────────── */
+.highlightBar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background-color: #ABCFEF;
+    border-radius: 40px;
+    padding: 14px 20px;
+    margin-top: 4px;
+}
+
+.barIcon {
+    font-size: 20px;
+    flex-shrink: 0;
+    line-height: 1;
+}
+
+.barText {
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    font-weight: 400;
+    color: #013064;
+    line-height: 1;
+}
+
+.barText strong {
+    font-weight: 700;
+}
