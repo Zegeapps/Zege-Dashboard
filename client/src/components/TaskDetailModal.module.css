@@ -391,3 +391,109 @@
     cursor: pointer;
     transition: opacity 0.15s;
 }
+
+/* ── Assignee row (avatar + name) ────────────────── */
+.assigneeList {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.assigneeRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.assigneeAvatar {
+    position: relative;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #013064;
+    flex-shrink: 0;
+    border: 1.5px solid #e5e7eb;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.assigneeAvatarInitial {
+    font-family: 'Manrope', sans-serif;
+    font-size: 12px;
+    font-weight: 800;
+    color: #fff;
+    z-index: 1;
+}
+
+.assigneeAvatar img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 2;
+    display: block;
+}
+
+/* ── Multi-select Visual Picker (same as TaskPage) ── */
+.assigneePicker {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+}
+
+.assigneeChip {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 12px 6px 6px;
+    border-radius: 40px;
+    border: 1.5px solid #e5e7eb;
+    background: #f9f9f9;
+    cursor: pointer;
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.assigneeChipActive {
+    border-color: #013064;
+    background: #E6F2FB;
+    color: #013064;
+}
+
+.assigneeChipAvatar {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: #013064;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.assigneeChipInitial {
+    font-family: 'Manrope', sans-serif;
+    font-size: 11px;
+    font-weight: 800;
+    color: #fff;
+    z-index: 1;
+}
+
+.assigneeChipImg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    z-index: 2;
+}

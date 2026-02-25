@@ -1,0 +1,307 @@
+/* ── Page shell ──────────────────────────────────── */
+.page {
+    min-height: 100vh;
+    background: #F3F3F3;
+    font-family: 'Manrope', sans-serif;
+}
+
+/* ── Top header ──────────────────────────────────── */
+.header {
+    background: #013064;
+    padding: 20px 28px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.logo {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    border-radius: 12px;
+}
+
+.company {
+    font-size: 18px;
+    font-weight: 800;
+    color: #ffffff;
+    line-height: 1;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+}
+
+.subtitle {
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.55);
+    margin: 3px 0 0;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+/* ── Content body ────────────────────────────────── */
+.body {
+    max-width: 500px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+}
+
+/* ── Section heading ─────────────────────────────── */
+.sectionTitle {
+    font-size: 16px;
+    font-weight: 800;
+    color: #013064;
+    margin: 0 0 20px;
+}
+
+/* ── White form card ─────────────────────────────── */
+.formCard {
+    background: #ffffff;
+    border-radius: 18px;
+    padding: 24px 20px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+    margin-bottom: 0;
+}
+
+/* ── Form ────────────────────────────────────────── */
+.form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.fieldRow {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #6B7280;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 10px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: #111827;
+    background: #ffffff;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color 0.18s;
+}
+
+.input:focus {
+    border-color: #013064;
+}
+
+/* ── Password show/hide ───────────────────────── */
+.passwordWrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.passwordWrap .input {
+    flex: 1;
+    padding-right: 44px;
+}
+
+.eyeBtn {
+    position: absolute;
+    right: 12px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    padding: 0;
+    opacity: 0.6;
+    transition: opacity 0.15s;
+}
+
+.eyeBtn:hover {
+    opacity: 1;
+}
+
+/* ── Avatar picker ───────────────────────────────── */
+.avatarPicker {
+    display: flex;
+    gap: 12px;
+}
+
+.avatarOption {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border: 2px solid #E5E7EB;
+    border-radius: 14px;
+    background: #ffffff;
+    cursor: pointer;
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: #6B7280;
+    transition: all 0.18s;
+    min-width: 100px;
+}
+
+.avatarOption:hover {
+    border-color: #013064;
+}
+
+.avatarSelected {
+    border-color: #013064;
+    background: #EEF4FB;
+    color: #013064;
+}
+
+.avatarImg {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* ── Form actions ────────────────────────────────── */
+.formActions {
+    display: flex;
+    gap: 10px;
+    padding-top: 4px;
+}
+
+.btnPrimary {
+    flex: 1;
+    padding: 12px;
+    background: #013064;
+    color: #ffffff;
+    border: none;
+    border-radius: 12px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.18s;
+}
+
+.btnPrimary:hover {
+    opacity: 0.85;
+}
+
+.btnPrimary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btnSecondary {
+    padding: 12px 20px;
+    background: transparent;
+    color: #6B7280;
+    border: 1.5px solid #E5E7EB;
+    border-radius: 12px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* ── Divider ─────────────────────────────────────── */
+.divider {
+    border: none;
+    border-top: 1.5px solid #E5E7EB;
+    margin: 28px 0;
+}
+
+/* ── User list ───────────────────────────────────── */
+.userList {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.userRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 10px 16px;
+}
+
+.userAvatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.userName {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 700;
+    color: #111827;
+}
+
+.userActions {
+    display: flex;
+    gap: 8px;
+}
+
+.btnEdit {
+    padding: 6px 14px;
+    background: #EEF4FB;
+    color: #013064;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.btnDelete {
+    padding: 6px 14px;
+    background: #FEF2F2;
+    color: #DC2626;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Manrope', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+/* ── Misc ────────────────────────────────────────── */
+.error {
+    font-size: 13px;
+    color: #DC2626;
+    background: #FEF2F2;
+    padding: 8px 12px;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.empty {
+    font-size: 14px;
+    color: #9CA3AF;
+    text-align: center;
+    padding: 24px 0;
+}
+
+.section {
+    margin-bottom: 0;
+}

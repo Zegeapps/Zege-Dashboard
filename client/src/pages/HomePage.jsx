@@ -1,64 +1,56 @@
 import { useState, useEffect } from 'react';
 import { getTasks } from '../services/taskService';
+import { getCurrentUser } from '../services/authService';
 import styles from './HomePage.module.css';
 
-function todayStr() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-}
-
 export default function HomePage() {
-    const [stats, setStats] = useState({ total: 0, completed: 0, upcoming: 0, today: 0 });
+    const [tasks, setTasks] = useState([]);
+    const currentUser = getCurrentUser();
 
     useEffect(() => {
-        getTasks()
-            .then(res => {
-                const tasks = res.data || [];
-                const today = todayStr();
-                setStats({
-                    total: tasks.length,
-                    completed: tasks.filter(t => t.status === 'Done').length,
-                    upcoming: tasks.filter(t => t.status !== 'Done').length,
-                    today: tasks.filter(t => t.dueDate && t.dueDate.slice(0, 10) === today).length,
-                });
-            })
-            .catch(() => { }); // fail silently — stats stay 0
+        getTasks().then(res => setTasks(res.data)).catch(() => { });
     }, []);
 
+    const total = tasks.length;
+    const completed = tasks.filter(t => t.status === 'Done').length;
+    const upcoming = total - completed;
+    const assignedTask = tasks.filter(t => t.assignedTo?._id === currentUser?._id).length;
+
     const STATS = [
-        { value: stats.total, label: 'Total' },
-        { value: stats.upcoming, label: 'Upcoming' },
-        { value: stats.completed, label: 'Completed' },
+        { value: total, label: 'Total' },
+        { value: upcoming, label: 'Upcoming' },
+        { value: completed, label: 'Completed' },
     ];
 
     return (
         <section className={styles.content}>
 
-            {/* ── Section title ── */}
             <h2 className={styles.sectionTitle}>Task Overview</h2>
 
-            {/* ── Overview card ── */}
             <div className={styles.card}>
-
-                {/* 3-column stats grid */}
-                <div className={styles.statsRow}>
+                {/* 3-column stats */}
+                <div className={styles.statsGrid}>
                     {STATS.map(({ value, label }) => (
                         <div key={label} className={styles.statItem}>
-                            <span className={styles.statNumber}>{value}</span>
-                            <span className={styles.statLabel}>{label}</span>
+                            <p className={styles.statValue}>{value}</p>
+                            <p className={styles.statLabel}>{label}</p>
                         </div>
                     ))}
                 </div>
 
-                {/* Blue highlight bar */}
-                <div className={styles.highlightBar}>
-                    <span className={styles.barIcon} aria-hidden="true">🎯</span>
-                    <p className={styles.barText}>
-                        You have <strong>{stats.today}</strong> task{stats.today !== 1 ? 's' : ''} today
+                {/* Assigned tasks banner */}
+                <div className={styles.banner}>
+                    <img
+                        src="/Target.png"
+                        alt="Target"
+                        className={styles.bannerIcon}
+                    />
+                    <p className={styles.bannerText}>
+                        You have <strong>{assignedTask}</strong> {assignedTask === 1 ? 'task' : 'tasks'} assigned
                     </p>
                 </div>
-
             </div>
+
         </section>
     );
 }

@@ -7,7 +7,8 @@ router.post("/", async (req, res) => {
     try {
         const newTask = new Task(req.body);
         const savedTask = await newTask.save();
-        res.status(201).json(savedTask);
+        const populated = await savedTask.populate("assignedTo", "username avatar");
+        res.status(201).json(populated);
     } catch (error) {
         res.status(500).json({ message: "Error creating task", error });
     }
@@ -16,7 +17,9 @@ router.post("/", async (req, res) => {
 // GET ALL TASKS
 router.get("/", async (req, res) => {
     try {
-        const tasks = await Task.find().sort({ createdAt: -1 });
+        const tasks = await Task.find()
+            .populate("assignedTo", "username avatar")
+            .sort({ createdAt: -1 });
         res.json(tasks);
     } catch (error) {
         res.status(500).json({ message: "Error fetching tasks", error });
@@ -30,7 +33,7 @@ router.put("/:id", async (req, res) => {
             req.params.id,
             req.body,
             { new: true }
-        );
+        ).populate("assignedTo", "username avatar");
         res.json(updatedTask);
     } catch (error) {
         res.status(500).json({ message: "Error updating task", error });

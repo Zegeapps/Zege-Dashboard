@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { getTasks, createTask, updateTask } from '../services/taskService';
+import { getUsers } from '../services/userService';
 import TaskDetailModal from '../components/TaskDetailModal';
+import { getCurrentUser } from '../services/authService';
 import styles from './TaskPage.module.css';
 
 /* ── Image options: value is stored in DB, src is public path ── */
@@ -29,6 +31,7 @@ const emptyForm = {
     startDate: '',
     dueDate: '',
     estimatedEffort: '',
+    assignedTo: [],
 };
 
 export default function TaskPage() {
@@ -40,10 +43,16 @@ export default function TaskPage() {
     const [form, setForm] = useState(emptyForm);
     const [submitting, setSubmitting] = useState(false);
     const [toast, setToast] = useState(null); // { message }
+    const [filter, setFilter] = useState('All'); // 'All' | 'My'
+    const [allUsers, setAllUsers] = useState([]);
+    const currentUser = getCurrentUser();
 
-    /* ── Fetch tasks on mount ──────────────────────────────── */
+    /* ── Fetch tasks + users on mount ──────────────────────────────── */
     useEffect(() => {
         fetchTasks();
+        getUsers().then(res => {
+            if (Array.isArray(res.data)) setAllUsers(res.data);
+        }).catch(() => { });
     }, []);
 
     async function fetchTasks() {
@@ -109,7 +118,7 @@ export default function TaskPage() {
     return (
         <section className={styles.content}>
 
-            <h2 className={styles.sectionTitle}>Tasks</h2>
+
 
             {/* Loading */}
             {loading && <p className={styles.message}>Loading tasks…</p>}
@@ -124,53 +133,89 @@ export default function TaskPage() {
                 </div>
             )}
 
-            {/* Task list */}
+            {/* ── Section title + Filter ── */}
+            <div className={styles.headerRow}>
+                <h2 className={styles.sectionTitle}>Tasks</h2>
+                <div className={styles.filterToggle}>
+                    <button
+                        className={filter === 'All' ? styles.filterActive : styles.filterBtn}
+                        onClick={() => setFilter('All')}
+                    >All</button>
+                    <button
+                        className={filter === 'My' ? styles.filterActive : styles.filterBtn}
+                        onClick={() => setFilter('My')}
+                    >My</button>
+                </div>
+            </div>
+
+            {/* ── Task list ── */}
             <ul className={styles.list}>
-                {tasks.map(task => (
-                    <li
-                        key={task._id}
-                        className={styles.card}
-                        onClick={() => setSelectedTask(task)}
-                        style={{ cursor: 'pointer' }}
-                    >
-
-                        <img
-                            src={resolveImage(task.image)}
-                            alt={task.title}
-                            className={styles.cardImage}
-                            onError={e => { e.target.src = '/Design.png'; }}
-                        />
-
-                        {/* Middle: text */}
-                        <div className={styles.cardBody}>
-                            <p className={styles.cardTitle}>{task.title}</p>
-                            {task.description ? (
-                                <p className={styles.cardDesc}>{task.description}</p>
-                            ) : null}
-                        </div>
-
-                        {/* Right: status circle */}
-                        <button
-                            className={[
-                                styles.status,
-                                task.status === 'In Progress' ? styles.statusInProgress : '',
-                                task.status === 'Done' ? styles.statusDone : '',
-                            ].join(' ')}
-                            onClick={e => { e.stopPropagation(); toggleTask(task); }}
-                            aria-label={`Status: ${task.status}. Click to advance.`}
+                {loading ? <p>Loading...</p> : tasks
+                    .filter(t => filter === 'All' || (t.assignedTo?.some(u => u._id === currentUser?._id)))
+                    .map(task => (
+                        <li
+                            key={task._id}
+                            className={styles.card}
+                            onClick={() => setSelectedTask(task)}
+                            style={{ cursor: 'pointer' }}
                         >
-                            {task.status === 'Done' && (
-                                <svg viewBox="0 0 12 10" fill="none" className={styles.checkIcon}>
-                                    <path d="M1 5l3.5 3.5L11 1" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                            )}
-                            {task.status === 'In Progress' && (
-                                <span className={styles.inProgressDot} />
-                            )}
-                        </button>
 
-                    </li>
-                ))}
+                            <img
+                                src={resolveImage(task.image)}
+                                alt={task.title}
+                                className={styles.cardImage}
+                                onError={e => { e.target.src = '/Design.png'; }}
+                            />
+
+                            {/* Middle: text */}
+                            <div className={styles.cardBody}>
+                                <p className={styles.cardTitle}>{task.title}</p>
+                                {task.description ? (
+                                    <p className={styles.cardDesc}>{task.description}</p>
+                                ) : null}
+                            </div>
+
+                            {/* Right: status circle */}
+                            <button
+                                className={[
+                                    styles.status,
+                                    task.status === 'In Progress' ? styles.statusInProgress : '',
+                                    task.status === 'Done' ? styles.statusDone : '',
+                                ].join(' ')}
+                                onClick={e => { e.stopPropagation(); toggleTask(task); }}
+                                aria-label={`Status: ${task.status}. Click to advance.`}
+                            >
+                                {task.status === 'Done' && (
+                                    <svg viewBox="0 0 12 10" fill="none" className={styles.checkIcon}>
+                                        <path d="M1 5l3.5 3.5L11 1" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                    </svg>
+                                )}
+                                {task.status === 'In Progress' && (
+                                    <span className={styles.inProgressDot} />
+                                )}
+                            </button>
+
+                            {/* Assignee avatars (multiple) */}
+                            {task.assignedTo && task.assignedTo.length > 0 && (
+                                <div className={styles.assignmentWrap}>
+                                    {task.assignedTo.map(user => (
+                                        <div key={user._id} className={styles.avatarCircle} title={user.username}>
+                                            <span className={styles.avatarInitial}>
+                                                {user.username?.[0]?.toUpperCase()}
+                                            </span>
+                                            <img
+                                                src={`/${user.avatar}.jpg`}
+                                                alt={user.username}
+                                                className={styles.avatarImg}
+                                                onError={e => { e.target.style.display = 'none'; }}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                        </li>
+                    ))}
             </ul>
 
             {/* ── Error toast ── */}
@@ -185,75 +230,113 @@ export default function TaskPage() {
                         <h3 className={styles.modalTitle}>New Task</h3>
 
                         <form onSubmit={handleCreate} className={styles.form}>
+                            {/* Top group: Title, Desc, Priority (12px internal gap) */}
+                            <div className={styles.topGroup}>
+                                <input
+                                    className={styles.input}
+                                    type="text"
+                                    placeholder="Task title *"
+                                    value={form.title}
+                                    onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                                    required
+                                    autoFocus
+                                />
 
-                            {/* Title — required */}
-                            <input
-                                className={styles.input}
-                                type="text"
-                                placeholder="Task title *"
-                                value={form.title}
-                                onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-                                required
-                                autoFocus
-                            />
+                                <textarea
+                                    className={styles.input}
+                                    placeholder="Description (optional)"
+                                    rows={2}
+                                    value={form.description}
+                                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                                />
 
-                            {/* Description */}
-                            <textarea
-                                className={styles.input}
-                                placeholder="Description (optional)"
-                                rows={2}
-                                value={form.description}
-                                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                            />
+                                <select
+                                    className={styles.input}
+                                    value={form.priority}
+                                    onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}
+                                >
+                                    <option value="Low">Priority: Low</option>
+                                    <option value="Medium">Priority: Medium</option>
+                                    <option value="High">Priority: High</option>
+                                    <option value="Critical">Priority: Critical</option>
+                                </select>
+                            </div>
 
-                            {/* Priority */}
-                            <select
-                                className={styles.input}
-                                value={form.priority}
-                                onChange={e => setForm(f => ({ ...f, priority: e.target.value }))}
-                            >
-                                <option value="Low">Priority: Low</option>
-                                <option value="Medium">Priority: Medium</option>
-                                <option value="High">Priority: High</option>
-                                <option value="Critical">Priority: Critical</option>
-                            </select>
-
-                            {/* Dates row */}
-                            <div className={styles.row}>
-                                <div className={styles.field}>
-                                    <label className={styles.label}>Start date</label>
-                                    <input
-                                        className={styles.input}
-                                        type="date"
-                                        value={form.startDate}
-                                        onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
-                                    />
-                                </div>
-                                <div className={styles.field}>
-                                    <label className={styles.label}>Due date</label>
-                                    <input
-                                        className={styles.input}
-                                        type="date"
-                                        value={form.dueDate}
-                                        onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
-                                    />
+                            {/* Dates Section (18px gap above) */}
+                            <div className={styles.formSection}>
+                                <div className={styles.row}>
+                                    <div className={styles.field}>
+                                        <label className={styles.label}>Start date</label>
+                                        <input
+                                            className={styles.input}
+                                            type="date"
+                                            value={form.startDate}
+                                            onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))}
+                                        />
+                                    </div>
+                                    <div className={styles.field}>
+                                        <label className={styles.label}>Due date</label>
+                                        <input
+                                            className={styles.input}
+                                            type="date"
+                                            value={form.dueDate}
+                                            onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))}
+                                        />
+                                    </div>
                                 </div>
                             </div>
 
+                            {/* Assignee Section (18px gap above) */}
+                            <div className={styles.formSection}>
+                                <p className={styles.label} style={{ marginBottom: 4 }}>Assign to</p>
+                                <div className={styles.assigneePicker}>
+                                    {allUsers.map(u => {
+                                        const isSelected = form.assignedTo.includes(u._id);
+                                        return (
+                                            <button
+                                                key={u._id}
+                                                type="button"
+                                                className={`${styles.assigneeChip} ${isSelected ? styles.assigneeChipActive : ''}`}
+                                                onClick={() => {
+                                                    setForm(f => {
+                                                        const newAssigned = isSelected
+                                                            ? f.assignedTo.filter(id => id !== u._id)
+                                                            : [...f.assignedTo, u._id];
+                                                        return { ...f, assignedTo: newAssigned };
+                                                    });
+                                                }}
+                                            >
+                                                <div className={styles.assigneeChipAvatar}>
+                                                    <span className={styles.assigneeChipInitial}>{u.username[0].toUpperCase()}</span>
+                                                    <img
+                                                        src={`/${u.avatar}.jpg`}
+                                                        alt={u.username}
+                                                        className={styles.assigneeChipImg}
+                                                        onError={e => { e.target.style.display = 'none'; }}
+                                                    />
+                                                </div>
+                                                <span>{u.username}</span>
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </div>
 
-                            {/* Image picker */}
-                            <div className={styles.imagePicker}>
-                                {IMAGE_OPTIONS.map(opt => (
-                                    <button
-                                        key={opt.value}
-                                        type="button"
-                                        className={`${styles.imageOption} ${form.image === opt.value ? styles.imageSelected : ''}`}
-                                        onClick={() => setForm(f => ({ ...f, image: opt.value }))}
-                                    >
-                                        <img src={resolveImage(opt.value)} alt={opt.label} />
-                                        <span className={styles.imageLabel}>{opt.label}</span>
-                                    </button>
-                                ))}
+                            {/* Category/Image Section (18px gap above) */}
+                            <div className={styles.formSection}>
+                                <div className={styles.imagePicker}>
+                                    {IMAGE_OPTIONS.map(opt => (
+                                        <button
+                                            key={opt.value}
+                                            type="button"
+                                            className={`${styles.imageOption} ${form.image === opt.value ? styles.imageSelected : ''}`}
+                                            onClick={() => setForm(f => ({ ...f, image: opt.value }))}
+                                        >
+                                            <img src={resolveImage(opt.value)} alt={opt.label} />
+                                            <span className={styles.imageLabel}>{opt.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
 
                             <button
@@ -263,7 +346,6 @@ export default function TaskPage() {
                             >
                                 {submitting ? 'Saving…' : 'Add Task'}
                             </button>
-
                         </form>
                     </div>
                 </div>

@@ -1,37 +1,36 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { updateTask, deleteTask } from '../services/taskService';
+import { getUsers } from '../services/userService';
 import styles from './TaskDetailModal.module.css';
 
-const STATUSES = ['Not Started', 'In Progress', 'Done'];
-const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
-
-const IMAGE_MAP = {
-    design: '/Design.png',
-    development: '/Development.png',
-    research: '/Research.png',
-    marketing: '/Marketing.png',
-    writing: '/Writing.png',
-    other: '/Other.png',
-};
 
 function resolveImage(name) {
-    return IMAGE_MAP[(name || '').toLowerCase()] || '/Design.png';
+    const known = ['Design', 'Development', 'Research', 'Marketing', 'Writing', 'Other'];
+    const matched = known.find(k => k.toLowerCase() === (name || '').toLowerCase());
+    return matched ? `/${matched}.png` : '/Design.png';
 }
 
 function fmt(dateStr) {
     if (!dateStr) return '—';
-    return new Date(dateStr).toLocaleDateString('en-GB', {
-        day: '2-digit', month: 'short', year: 'numeric',
-    });
+    const d = new Date(dateStr);
+    return isNaN(d) ? '—' : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
-/* ─────────────────────────────────────────────────────── */
+const STATUSES = ['Not Started', 'In Progress', 'Done'];
+const PRIORITIES = ['Low', 'Medium', 'High', 'Critical'];
+
+
 export default function TaskDetailModal({ task, onClose, onUpdated, onDeleted }) {
     const [editing, setEditing] = useState(false);
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [confirmComplete, setConfirmComplete] = useState(false);
     const [saving, setSaving] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [allUsers, setAllUsers] = useState([]);
+
+    useEffect(() => {
+        getUsers().then(res => setAllUsers(res.data)).catch(() => { });
+    }, []);
 
     const [form, setForm] = useState({
         title: task.title || '',
@@ -40,6 +39,7 @@ export default function TaskDetailModal({ task, onClose, onUpdated, onDeleted })
         priority: task.priority || 'Low',
         startDate: task.startDate ? task.startDate.slice(0, 10) : '',
         dueDate: task.dueDate ? task.dueDate.slice(0, 10) : '',
+        assignedTo: task.assignedTo?.map(u => u._id) || [],
     });
 
     const field = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -230,6 +230,66 @@ export default function TaskDetailModal({ task, onClose, onUpdated, onDeleted })
                                 <p className={styles.sectionValue}>{fmt(task.dueDate)}</p>
                             )}
                         </div>
+                    </div>
+
+                    {/* Assigned To */}
+                    <div className={styles.section}>
+                        <p className={styles.sectionLabel}>Assigned to</p>
+                        {editing ? (
+                            <div className={styles.assigneePicker}>
+                                {allUsers.map(u => {
+                                    const isSelected = form.assignedTo.includes(u._id);
+                                    return (
+                                        <button
+                                            key={u._id}
+                                            type="button"
+                                            className={`${styles.assigneeChip} ${isSelected ? styles.assigneeChipActive : ''}`}
+                                            onClick={() => {
+                                                setForm(f => {
+                                                    const newAssigned = isSelected
+                                                        ? f.assignedTo.filter(id => id !== u._id)
+                                                        : [...f.assignedTo, u._id];
+                                                    return { ...f, assignedTo: newAssigned };
+                                                });
+                                            }}
+                                        >
+                                            <div className={styles.assigneeChipAvatar}>
+                                                <span className={styles.assigneeChipInitial}>{u.username[0].toUpperCase()}</span>
+                                                <img
+                                                    src={`/${u.avatar}.jpg`}
+                                                    alt={u.username}
+                                                    className={styles.assigneeChipImg}
+                                                    onError={e => { e.target.style.display = 'none'; }}
+                                                />
+                                            </div>
+                                            <span>{u.username}</span>
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            task.assignedTo && task.assignedTo.length > 0 ? (
+                                <div className={styles.assigneeList}>
+                                    {task.assignedTo.map(user => (
+                                        <div key={user._id} className={styles.assigneeRow}>
+                                            <div className={styles.assigneeAvatar}>
+                                                <span className={styles.assigneeAvatarInitial}>
+                                                    {user.username?.[0]?.toUpperCase()}
+                                                </span>
+                                                <img
+                                                    src={`/${user.avatar}.jpg`}
+                                                    alt={user.username}
+                                                    onError={e => { e.target.style.display = 'none'; }}
+                                                />
+                                            </div>
+                                            <p className={styles.sectionValue}>{user.username}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className={styles.sectionValue}><span className={styles.empty}>Unassigned</span></p>
+                            )
+                        )}
                     </div>
 
                     {/* Created */}

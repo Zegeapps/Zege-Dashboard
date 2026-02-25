@@ -1,50 +1,50 @@
 /* ── Outer content area ─────────────────────────── */
 .content {
     flex: 1;
-    background-color: #F3F3F3;
-    padding: 24px 20px;
+    background-color: #F0F2F5;
+    padding: 24px 18px;
 }
 
 /* ── Section title ──────────────────────────────── */
 .sectionTitle {
     font-family: 'Manrope', sans-serif;
-    font-size: 16px;
-    font-weight: 600;
+    font-size: 17px;
+    font-weight: 800;
     color: #0d0d0d;
-    margin-bottom: 16px;
+    margin: 0 0 14px;
     -webkit-font-smoothing: antialiased;
 }
 
 /* ── Overview card ──────────────────────────────── */
 .card {
     background: #ffffff;
-    border-radius: 24px;
-    padding: 24px;
-    box-shadow: 0px 8px 20px rgba(0, 0, 0, 0.08);
+    border-radius: 20px;
+    padding: 22px 20px 20px;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.07);
 }
 
-/* ── 3-column stats row ─────────────────────────── */
-.statsRow {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
+/* ── 3-column stats grid ────────────────────────── */
+.statsGrid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
     margin-bottom: 20px;
 }
 
 .statItem {
-    flex: 1;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
 }
 
-.statNumber {
+.statValue {
     font-family: 'Manrope', sans-serif;
-    font-size: 28px;
-    font-weight: 700;
+    font-size: 30px;
+    font-weight: 800;
     color: #013064;
     line-height: 1;
+    margin: 0;
 }
 
 .statLabel {
@@ -53,33 +53,42 @@
     font-weight: 400;
     color: #6b7280;
     line-height: 1;
+    margin: 0;
 }
 
-/* ── Blue highlight bar ─────────────────────────── */
-.highlightBar {
+/* ── Today's banner ─────────────────────────────── */
+.banner {
     display: flex;
     align-items: center;
     gap: 12px;
-    background-color: #ABCFEF;
+    background: #DBEAFE;
     border-radius: 40px;
-    padding: 14px 20px;
-    margin-top: 4px;
+    padding: 13px 18px;
 }
 
-.barIcon {
-    font-size: 20px;
+.bannerIcon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
     flex-shrink: 0;
-    line-height: 1;
 }
 
-.barText {
+.bannerIcon {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.bannerText {
     font-family: 'Manrope', sans-serif;
     font-size: 14px;
-    font-weight: 400;
+    font-weight: 500;
     color: #013064;
+    margin: 0;
     line-height: 1;
 }
 
-.barText strong {
-    font-weight: 700;
+.bannerText strong {
+    font-weight: 800;
 }
