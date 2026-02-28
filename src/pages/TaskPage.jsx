@@ -3,6 +3,7 @@ import { getTasks, createTask, updateTask } from '../services/taskService';
 import { getUsers } from '../services/userService';
 import TaskDetailModal from '../components/TaskDetailModal';
 import { getCurrentUser } from '../services/authService';
+import Lottie from 'lottie-react';
 import styles from './TaskPage.module.css';
 
 /* ── Image options: value is stored in DB, src is public path ── */
@@ -43,8 +44,9 @@ export default function TaskPage() {
     const [form, setForm] = useState(emptyForm);
     const [submitting, setSubmitting] = useState(false);
     const [toast, setToast] = useState(null); // { message }
-    const [filter, setFilter] = useState('All'); // 'All' | 'My'
+    const [filter, setFilter] = useState('All'); // 'All' | 'My' | 'Completed'
     const [allUsers, setAllUsers] = useState([]);
+    const [animationData, setAnimationData] = useState(null);
     const currentUser = getCurrentUser();
 
     /* ── Fetch tasks + users on mount ──────────────────────────────── */
@@ -53,6 +55,12 @@ export default function TaskPage() {
         getUsers().then(res => {
             if (Array.isArray(res.data)) setAllUsers(res.data);
         }).catch(() => { });
+
+        // Fetch Lottie animation from public folder
+        fetch('/Loading 40 _ Paperplane.json')
+            .then(res => res.json())
+            .then(data => setAnimationData(data))
+            .catch(err => console.error('Error loading animation:', err));
     }, []);
 
     async function fetchTasks() {
@@ -76,11 +84,17 @@ export default function TaskPage() {
     }
 
     async function toggleTask(task) {
-        const newStatus = STATUS_CYCLE[task.status] ?? 'In Progress';
+        const isDone = task.status === 'Done';
+        const newStatus = isDone ? 'In Progress' : 'Done';
+
         // Optimistic update
         setTasks(prev => prev.map(t => t._id === task._id ? { ...t, status: newStatus } : t));
+
         try {
             await updateTask(task._id, { status: newStatus });
+            if (newStatus === 'Done') {
+                showToast('Task marked as completed! 🎉');
+            }
         } catch {
             // Revert on failure
             setTasks(prev => prev.map(t => t._id === task._id ? { ...t, status: task.status } : t));
@@ -106,13 +120,27 @@ export default function TaskPage() {
 
     /* ── Modal callbacks ───────────────────────────────────── */
     function handleTaskUpdated(updated) {
+        const oldTask = tasks.find(t => t._id === updated._id);
         setTasks(prev => prev.map(t => t._id === updated._id ? updated : t));
         setSelectedTask(updated);
+
+        // Show toast if newly completed
+        if (updated.status === 'Done' && oldTask?.status !== 'Done') {
+            showToast('Task marked as completed! 🎉');
+        }
     }
 
     function handleTaskDeleted(id) {
         setTasks(prev => prev.filter(t => t._id !== id));
     }
+
+    const filteredTasks = tasks.filter(t => {
+        if (filter === 'Completed') return t.status === 'Done';
+        // If not Completed filter, show pending/in-progress only
+        if (t.status === 'Done') return false;
+        if (filter === 'My') return t.assignedTo?.some(u => u._id === currentUser?._id);
+        return true; // All filter (excluding Done)
+    });
 
     /* ── Render ────────────────────────────────────────────── */
     return (
@@ -121,38 +149,63 @@ export default function TaskPage() {
 
 
             {/* Loading */}
-            {loading && <p className={styles.message}>Loading tasks…</p>}
-
-            {/* Error */}
-            {error && <p className={`${styles.message} ${styles.errorMsg}`}>{error}</p>}
-
-            {!loading && !error && tasks.length === 0 && (
-                <div className={styles.emptyState}>
-                    <p className={styles.emptyTitle}>No tasks yet</p>
-                    <p className={styles.emptySubtext}>Tap the + button below to create your first task</p>
+            {loading && (
+                <div className={styles.loadingContainer}>
+                    {animationData && (
+                        <Lottie
+                            animationData={animationData}
+                            loop={true}
+                            className={styles.lottieLoader}
+                        />
+                    )}
+                    <p className={styles.loadingTitle}>task loading...</p>
                 </div>
             )}
 
-            {/* ── Section title + Filter ── */}
-            <div className={styles.headerRow}>
-                <h2 className={styles.sectionTitle}>Tasks</h2>
-                <div className={styles.filterToggle}>
-                    <button
-                        className={filter === 'All' ? styles.filterActive : styles.filterBtn}
-                        onClick={() => setFilter('All')}
-                    >All</button>
-                    <button
-                        className={filter === 'My' ? styles.filterActive : styles.filterBtn}
-                        onClick={() => setFilter('My')}
-                    >My</button>
+            {/* Error */}
+            {!loading && error && <p className={`${styles.message} ${styles.errorMsg}`}>{error}</p>}
+
+            {/* ── Section title + Filter (Hidden when loading) ── */}
+            {!loading && (
+                <div className={styles.headerRow}>
+                    <h2 className={styles.sectionTitle}>Tasks</h2>
+                    <div className={styles.filterToggle}>
+                        <button
+                            className={filter === 'All' ? styles.filterActive : styles.filterBtn}
+                            onClick={() => setFilter('All')}
+                        >All</button>
+                        <button
+                            className={filter === 'My' ? styles.filterActive : styles.filterBtn}
+                            onClick={() => setFilter('My')}
+                        >My</button>
+                        <button
+                            className={filter === 'Completed' ? styles.filterActive : styles.filterBtn}
+                            onClick={() => setFilter('Completed')}
+                        >Completed</button>
+                    </div>
                 </div>
-            </div>
+            )}
+
+            {!loading && !error && filteredTasks.length === 0 && (
+                <div className={styles.emptyState}>
+                    {filter === 'Completed' ? (
+                        <>
+                            <p className={styles.emptyTitle}>No completed tasks</p>
+                            <p className={styles.emptySubtext}>Finish your active tasks to see them here!</p>
+                        </>
+                    ) : (
+                        <>
+                            <p className={styles.emptyTitle}>No tasks yet</p>
+                            <p className={styles.emptySubtext}>Tap the + button below to create your first task</p>
+                        </>
+                    )}
+                </div>
+            )}
 
             {/* ── Task list ── */}
-            <ul className={styles.list}>
-                {loading ? <p>Loading...</p> : tasks
-                    .filter(t => filter === 'All' || (t.assignedTo?.some(u => u._id === currentUser?._id)))
-                    .map(task => (
+            {!loading && filteredTasks.length > 0 && (
+                <ul className={styles.list}>
+                    {filteredTasks.map(task => (
                         <li
                             key={task._id}
                             className={styles.card}
@@ -187,11 +240,8 @@ export default function TaskPage() {
                             >
                                 {task.status === 'Done' && (
                                     <svg viewBox="0 0 12 10" fill="none" className={styles.checkIcon}>
-                                        <path d="M1 5l3.5 3.5L11 1" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                                        <path d="M1 5l3.5 3.5L11 1" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                                     </svg>
-                                )}
-                                {task.status === 'In Progress' && (
-                                    <span className={styles.inProgressDot} />
                                 )}
                             </button>
 
@@ -216,7 +266,8 @@ export default function TaskPage() {
 
                         </li>
                     ))}
-            </ul>
+                </ul>
+            )}
 
             {/* ── Error toast ── */}
             {toast && (

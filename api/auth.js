@@ -7,11 +7,8 @@ export default async function handler(req, res) {
     }
 
     try {
-        console.log('--- AUTH START ---');
         await connectDB();
-        console.log('--- DB CONNECTED IN AUTH ---');
         const { username, password } = req.body;
-        console.log('--- ATTEMPTING LOGIN FOR:', username, '---');
 
         const cleanUser = (username || '').trim();
         const cleanPass = (password || '').trim();

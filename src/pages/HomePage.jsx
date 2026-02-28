@@ -5,16 +5,25 @@ import styles from './HomePage.module.css';
 
 export default function HomePage() {
     const [tasks, setTasks] = useState([]);
+    const [loading, setLoading] = useState(true);
     const currentUser = getCurrentUser();
 
     useEffect(() => {
-        getTasks().then(res => setTasks(res.data)).catch(() => { });
+        setLoading(true);
+        getTasks()
+            .then(res => {
+                setTasks(res.data);
+                setLoading(false);
+            })
+            .catch(() => {
+                setLoading(false);
+            });
     }, []);
 
     const total = tasks.length;
     const completed = tasks.filter(t => t.status === 'Done').length;
     const upcoming = total - completed;
-    const assignedTask = tasks.filter(t => t.assignedTo?._id === currentUser?._id).length;
+    const assignedTask = tasks.filter(t => t.assignedTo?.some(u => u._id === currentUser?._id)).length;
 
     const STATS = [
         { value: total, label: 'Total' },
@@ -32,7 +41,11 @@ export default function HomePage() {
                 <div className={styles.statsGrid}>
                     {STATS.map(({ value, label }) => (
                         <div key={label} className={styles.statItem}>
-                            <p className={styles.statValue}>{value}</p>
+                            {loading ? (
+                                <span className={`${styles.skeleton} ${styles.skeletonValue}`}></span>
+                            ) : (
+                                <p className={styles.statValue}>{value}</p>
+                            )}
                             <p className={styles.statLabel}>{label}</p>
                         </div>
                     ))}
@@ -46,7 +59,11 @@ export default function HomePage() {
                         className={styles.bannerIcon}
                     />
                     <p className={styles.bannerText}>
-                        You have <strong>{assignedTask}</strong> {assignedTask === 1 ? 'task' : 'tasks'} assigned
+                        You have {loading ? (
+                            <span className={`${styles.skeleton} ${styles.skeletonStrong}`}></span>
+                        ) : (
+                            <strong>{assignedTask}</strong>
+                        )} {assignedTask === 1 ? 'task' : 'tasks'} assigned
                     </p>
                 </div>
             </div>
