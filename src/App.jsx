@@ -9,7 +9,18 @@ import LoginPage from './pages/LoginPage';
 import AdminPage from './pages/AdminPage';
 import SplashScreen from './components/SplashScreen';
 import { isAuthenticated } from './services/authService';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import styles from './App.module.css';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
 
 function Protected({ children }) {
   return isAuthenticated() ? children : <Navigate to="/login" />;
@@ -30,28 +41,30 @@ export default function App() {
   }
 
   return (
-    <BrowserRouter>
-      <Routes>
-        {/* Completely standalone — no layout, no nav */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/admin" element={<AdminPage />} />
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <Routes>
+          {/* Completely standalone — no layout, no nav */}
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/admin" element={<AdminPage />} />
 
-        {/* Protected dashboard — AppLayout + HeroHeader */}
-        <Route path="/*" element={
-          <Protected>
-            <AppLayout>
-              <HeroHeader />
-              <main className={styles.main}>
-                <Routes>
-                  <Route path="/" element={<HomePage />} />
-                  <Route path="/task" element={<TaskPage />} />
-                  <Route path="/files" element={<FilesPage />} />
-                </Routes>
-              </main>
-            </AppLayout>
-          </Protected>
-        } />
-      </Routes>
-    </BrowserRouter>
+          {/* Protected dashboard — AppLayout + HeroHeader */}
+          <Route path="/*" element={
+            <Protected>
+              <AppLayout>
+                <HeroHeader />
+                <main className={styles.main}>
+                  <Routes>
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/task" element={<TaskPage />} />
+                    <Route path="/files" element={<FilesPage />} />
+                  </Routes>
+                </main>
+              </AppLayout>
+            </Protected>
+          } />
+        </Routes>
+      </BrowserRouter>
+    </QueryClientProvider>
   );
 }

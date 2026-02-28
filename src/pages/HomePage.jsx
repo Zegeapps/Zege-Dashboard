@@ -1,24 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { getTasks } from '../services/taskService';
 import { getCurrentUser } from '../services/authService';
 import styles from './HomePage.module.css';
 
 export default function HomePage() {
-    const [tasks, setTasks] = useState([]);
-    const [loading, setLoading] = useState(true);
     const currentUser = getCurrentUser();
 
-    useEffect(() => {
-        setLoading(true);
-        getTasks()
-            .then(res => {
-                setTasks(res.data);
-                setLoading(false);
-            })
-            .catch(() => {
-                setLoading(false);
-            });
-    }, []);
+    const { data: tasksRes, isLoading: loading } = useQuery({
+        queryKey: ['tasks'],
+        queryFn: getTasks,
+    });
+    const tasks = tasksRes?.data || [];
 
     const total = tasks.length;
     const completed = tasks.filter(t => t.status === 'Done').length;

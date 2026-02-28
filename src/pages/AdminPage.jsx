@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getUsers, createUser, updateUser, deleteUser } from '../services/userService';
 import styles from './AdminPage.module.css';
 
@@ -10,32 +11,56 @@ const AVATAR_OPTIONS = [
 const emptyForm = { username: '', password: '', avatar: 'Sree' };
 
 export default function AdminPage() {
-    const [users, setUsers] = useState([]);
+    const queryClient = useQueryClient();
     const [form, setForm] = useState(emptyForm);
     const [editingId, setEditingId] = useState(null);
-    const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const formRef = useRef(null);
 
-    useEffect(() => { fetchUsers(); }, []);
+    /* ── Queries ────────────────────────────────────────────── */
+    const { data: usersRes, isLoading: usersLoading, error: usersError } = useQuery({
+        queryKey: ['users'],
+        queryFn: getUsers,
+    });
+    const users = usersRes?.data || [];
 
-    async function fetchUsers() {
-        try {
-            const res = await getUsers();
-            // Guard: ensure we got an array back
-            if (Array.isArray(res.data)) setUsers(res.data);
-        } catch {
-            // Keep existing list visible; just flag the error
-            setError('Could not refresh user list.');
+    useEffect(() => {
+        if (usersError) setError('Could not refresh user list.');
+    }, [usersError]);
+
+    /* ── Mutations ──────────────────────────────────────────── */
+    const saveMutation = useMutation({
+        mutationFn: (variables) => {
+            if (editingId) return updateUser(editingId, variables);
+            return createUser(variables);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+            setForm(emptyForm);
+            setEditingId(null);
+            setShowPassword(false);
+        },
+        onError: (err) => {
+            setError(err.response?.data?.message || 'Error saving user.');
         }
-    }
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: deleteUser,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+            if (editingId) cancelEdit();
+        },
+        onError: () => {
+            setError('Failed to delete user. Please try again.');
+        }
+    });
 
     const field = (key) => (e) => setForm(f => ({ ...f, [key]: e.target.value }));
 
     async function handleSubmit(e) {
         e.preventDefault();
-        // Trim before validation
         const trimmed = {
             ...form,
             username: form.username.trim(),
@@ -44,23 +69,8 @@ export default function AdminPage() {
         if (!trimmed.username) { setError('Username cannot be blank.'); return; }
         if (!editingId && !trimmed.password) { setError('Password cannot be blank.'); return; }
 
-        setLoading(true);
         setError('');
-        try {
-            if (editingId) {
-                await updateUser(editingId, trimmed);
-            } else {
-                await createUser(trimmed);
-            }
-            setForm(emptyForm);
-            setEditingId(null);
-            setShowPassword(false);
-            await fetchUsers();
-        } catch (err) {
-            setError(err.response?.data?.message || 'Error saving user.');
-        } finally {
-            setLoading(false);
-        }
+        saveMutation.mutate(trimmed);
     }
 
     function startEdit(user) {
@@ -68,7 +78,6 @@ export default function AdminPage() {
         setForm({ username: user.username, password: user.password || '', avatar: user.avatar || 'Sree' });
         setShowPassword(false);
         setError('');
-        // Scroll form into view
         setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
     }
 
@@ -82,16 +91,10 @@ export default function AdminPage() {
     async function handleDelete(id) {
         const target = users.find(u => u._id === id);
         if (!window.confirm(`Delete user "@${target?.username}"? This cannot be undone.`)) return;
-        try {
-            await deleteUser(id);
-            // Optimistically remove from list immediately
-            setUsers(prev => prev.filter(u => u._id !== id));
-            // If we were editing this user, cancel edit
-            if (editingId === id) cancelEdit();
-        } catch {
-            setError('Failed to delete user. Please try again.');
-        }
+        deleteMutation.mutate(id);
     }
+
+    const loading = saveMutation.isPending || deleteMutation.isPending;
 
     return (
         <div className={styles.page}>

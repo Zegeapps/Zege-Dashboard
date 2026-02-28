@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getTasks, createTask, updateTask } from '../services/taskService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getTasks, createTask, updateTask, deleteTask } from '../services/taskService';
 import { getUsers } from '../services/userService';
 import TaskDetailModal from '../components/TaskDetailModal';
 import { getCurrentUser } from '../services/authService';
@@ -36,111 +37,108 @@ const emptyForm = {
 };
 
 export default function TaskPage() {
-    const [tasks, setTasks] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const queryClient = useQueryClient();
     const [showModal, setShowModal] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
     const [form, setForm] = useState(emptyForm);
-    const [submitting, setSubmitting] = useState(false);
     const [toast, setToast] = useState(null); // { message }
     const [filter, setFilter] = useState('All'); // 'All' | 'My' | 'Completed'
-    const [allUsers, setAllUsers] = useState([]);
     const [animationData, setAnimationData] = useState(null);
     const currentUser = getCurrentUser();
 
-    /* ── Fetch tasks + users on mount ──────────────────────────────── */
-    useEffect(() => {
-        fetchTasks();
-        getUsers().then(res => {
-            if (Array.isArray(res.data)) setAllUsers(res.data);
-        }).catch(() => { });
+    /* ── Queries ────────────────────────────────────────────── */
+    const { data: tasksRes, isLoading: tasksLoading, error: tasksError } = useQuery({
+        queryKey: ['tasks'],
+        queryFn: getTasks,
+    });
+    const tasks = tasksRes?.data || [];
 
-        // Fetch Lottie animation from public folder
+    const { data: usersRes } = useQuery({
+        queryKey: ['users'],
+        queryFn: getUsers,
+    });
+    const allUsers = usersRes?.data || [];
+
+    /* ── Lottie Fetch ────────────────────────────────────────── */
+    useEffect(() => {
         fetch('/Loading 40 _ Paperplane.json')
             .then(res => res.json())
             .then(data => setAnimationData(data))
             .catch(err => console.error('Error loading animation:', err));
     }, []);
 
-    async function fetchTasks() {
-        try {
-            setLoading(true);
-            const res = await getTasks();
-            setTasks(res.data);
-        } catch {
-            setError('Could not load tasks. Is the server running?');
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    /* ── 3-state cycle: Not Started → In Progress → Done → Not Started ── */
-    const STATUS_CYCLE = { 'Not Started': 'In Progress', 'In Progress': 'Done', 'Done': 'Not Started' };
+    const loading = tasksLoading;
+    const error = tasksError ? 'Could not load tasks. Is the server running?' : null;
 
     function showToast(msg) {
         setToast(msg);
         setTimeout(() => setToast(null), 3000);
     }
 
+    /* ── Mutations ──────────────────────────────────────────── */
+    const createMutation = useMutation({
+        mutationFn: createTask,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+            setShowModal(false);
+            setForm(emptyForm);
+        },
+        onError: () => alert('Failed to create task. Please try again.'),
+    });
+
+    const updateMutation = useMutation({
+        mutationFn: ({ id, data }) => updateTask(id, data),
+        onSuccess: (res, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+            if (variables.data.status === 'Done') {
+                showToast('Task marked as completed! 🎉');
+            }
+        },
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: deleteTask,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
+            setSelectedTask(null);
+        },
+    });
+
     async function toggleTask(task) {
         const isDone = task.status === 'Done';
         const newStatus = isDone ? 'In Progress' : 'Done';
-
-        // Optimistic update
-        setTasks(prev => prev.map(t => t._id === task._id ? { ...t, status: newStatus } : t));
-
-        try {
-            await updateTask(task._id, { status: newStatus });
-            if (newStatus === 'Done') {
-                showToast('Task marked as completed! 🎉');
-            }
-        } catch {
-            // Revert on failure
-            setTasks(prev => prev.map(t => t._id === task._id ? { ...t, status: task.status } : t));
-            showToast('Failed to update status. Try again.');
-        }
+        updateMutation.mutate({ id: task._id, data: { status: newStatus } });
     }
 
     async function handleCreate(e) {
         e.preventDefault();
         if (!form.title.trim()) return;
-        setSubmitting(true);
-        try {
-            const res = await createTask({ ...form, status: 'Not Started' });
-            setTasks(prev => [res.data, ...prev]);
-            setShowModal(false);
-            setForm(emptyForm);
-        } catch {
-            alert('Failed to create task. Please try again.');
-        } finally {
-            setSubmitting(false);
-        }
+        createMutation.mutate({ ...form, status: 'Not Started' });
     }
 
     /* ── Modal callbacks ───────────────────────────────────── */
     function handleTaskUpdated(updated) {
         const oldTask = tasks.find(t => t._id === updated._id);
-        setTasks(prev => prev.map(t => t._id === updated._id ? updated : t));
         setSelectedTask(updated);
+        queryClient.invalidateQueries({ queryKey: ['tasks'] });
 
-        // Show toast if newly completed
         if (updated.status === 'Done' && oldTask?.status !== 'Done') {
             showToast('Task marked as completed! 🎉');
         }
     }
 
     function handleTaskDeleted(id) {
-        setTasks(prev => prev.filter(t => t._id !== id));
+        deleteMutation.mutate(id);
     }
 
     const filteredTasks = tasks.filter(t => {
         if (filter === 'Completed') return t.status === 'Done';
-        // If not Completed filter, show pending/in-progress only
         if (t.status === 'Done') return false;
         if (filter === 'My') return t.assignedTo?.some(u => u._id === currentUser?._id);
-        return true; // All filter (excluding Done)
+        return true;
     });
+
+    const submitting = createMutation.isPending;
 
     /* ── Render ────────────────────────────────────────────── */
     return (

@@ -15,6 +15,7 @@
         "deploy": "vercel --prod"
     },
     "dependencies": {
+        "@tanstack/react-query": "^5.90.21",
         "axios": "^1.13.5",
         "lottie-react": "^2.4.1",
         "mongoose": "^8.9.1",
