@@ -26,7 +26,7 @@ export default function HeroHeader() {
 
                 {/* ── Title row: heading + avatar ── */}
                 <div className={styles.titleRow}>
-                    <h1 className={styles.title}>Build Slowly. Build Strong.</h1>
+                    <h1 className={styles.title}>Dream Big, Work Hard.</h1>
                     <button
                         className={styles.avatarBtn}
                         onClick={() => setSheetOpen(true)}
