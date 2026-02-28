@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { getTasks } from '../services/taskService';
 import { getCurrentUser } from '../services/authService';
 import styles from './HomePage.module.css';
 
 export default function HomePage() {
     const currentUser = getCurrentUser();
+    const navigate = useNavigate();
 
     const { data: tasksRes, isLoading: loading } = useQuery({
         queryKey: ['tasks'],
@@ -28,7 +30,7 @@ export default function HomePage() {
 
             <h2 className={styles.sectionTitle}>Task Overview</h2>
 
-            <div className={styles.card}>
+            <div className={styles.card} onClick={() => navigate('/task')}>
                 {/* 3-column stats */}
                 <div className={styles.statsGrid}>
                     {STATS.map(({ value, label }) => (
