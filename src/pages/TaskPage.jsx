@@ -88,17 +88,59 @@ export default function TaskPage() {
 
     const updateMutation = useMutation({
         mutationFn: ({ id, data }) => updateTask(id, data),
-        onSuccess: (res, variables) => {
-            queryClient.invalidateQueries({ queryKey: ['tasks'] });
-            if (variables.data.status === 'Done') {
+        onMutate: async ({ id, data }) => {
+            // Cancel any outgoing refetches (so they don't overwrite our optimistic update)
+            await queryClient.cancelQueries({ queryKey: ['tasks'] });
+
+            // Snapshot the previous value
+            const previousTasks = queryClient.getQueryData(['tasks']);
+
+            // Optimistically update to the new value
+            queryClient.setQueryData(['tasks'], (old) => {
+                if (!old?.data) return old;
+                return {
+                    ...old,
+                    data: old.data.map(t => t._id === id ? { ...t, ...data } : t)
+                };
+            });
+
+            // Show toast instantly if marking as done
+            if (data.status === 'Done') {
                 showToast('Task marked as completed! 🎉');
             }
+
+            // Return a context object with the snapshotted value
+            return { previousTasks };
+        },
+        onError: (err, newTodo, context) => {
+            // Rollback to the previous value if mutation fails
+            queryClient.setQueryData(['tasks'], context.previousTasks);
+            showToast('Failed to update task.');
+        },
+        onSettled: () => {
+            // Always refetch after error or success to synchronize with server
+            queryClient.invalidateQueries({ queryKey: ['tasks'] });
         },
     });
 
     const deleteMutation = useMutation({
         mutationFn: deleteTask,
-        onSuccess: () => {
+        onMutate: async (id) => {
+            await queryClient.cancelQueries({ queryKey: ['tasks'] });
+            const previousTasks = queryClient.getQueryData(['tasks']);
+            queryClient.setQueryData(['tasks'], (old) => {
+                if (!old?.data) return old;
+                return {
+                    ...old,
+                    data: old.data.filter(t => t._id !== id)
+                };
+            });
+            return { previousTasks };
+        },
+        onError: (err, id, context) => {
+            queryClient.setQueryData(['tasks'], context.previousTasks);
+        },
+        onSettled: () => {
             queryClient.invalidateQueries({ queryKey: ['tasks'] });
             setSelectedTask(null);
         },
