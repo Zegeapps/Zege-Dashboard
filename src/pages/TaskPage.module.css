@@ -159,8 +159,8 @@
 /* ── Floating Action Button ─────────────────────── */
 .fab {
     position: fixed;
-    /* stay within the 500px container on desktop */
-    right: max(calc(50vw - 500px / 2 + 20px), 20px);
+    /* stay in bottom-right corner */
+    right: 20px;
     bottom: 28px;
 
     width: 60px;

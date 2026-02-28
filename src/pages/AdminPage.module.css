@@ -41,7 +41,7 @@
 
 /* ── Content body ────────────────────────────────── */
 .body {
-    max-width: 500px;
+    width: 100%;
     margin: 0 auto;
     padding: 32px 20px 60px;
 }
