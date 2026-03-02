@@ -40,6 +40,7 @@ export default function TaskDetailModal({ task, onClose, onUpdated, onDeleted })
         startDate: task.startDate ? task.startDate.slice(0, 10) : '',
         dueDate: task.dueDate ? task.dueDate.slice(0, 10) : '',
         assignedTo: task.assignedTo?.map(u => u._id) || [],
+        subtasks: task.subtasks || [],
     });
 
     const field = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -70,6 +71,54 @@ export default function TaskDetailModal({ task, onClose, onUpdated, onDeleted })
             onUpdated(res.data);
         } catch {
             setForm(form); // revert
+        }
+    }
+
+    /* ── Subtask Handlers ───────────────────────────────── */
+    function handleAddSubtask() {
+        setForm(f => ({
+            ...f,
+            subtasks: [...f.subtasks, { title: '', isCompleted: false }]
+        }));
+    }
+
+    function handleUpdateSubtask(index, field, value) {
+        setForm(f => {
+            const newSubtasks = [...f.subtasks];
+            newSubtasks[index] = { ...newSubtasks[index], [field]: value };
+            return { ...f, subtasks: newSubtasks };
+        });
+    }
+
+    function handleRemoveSubtask(index) {
+        setForm(f => {
+            const newSubtasks = [...f.subtasks];
+            newSubtasks.splice(index, 1);
+            return { ...f, subtasks: newSubtasks };
+        });
+    }
+
+    async function handleToggleSubtask(index) {
+        // Toggle immediately triggers a save of the whole subtasks array
+        if (editing) return; // In edit mode, toggling doesn't save instantly, just edit checkmarks
+        const currentComplete = form.subtasks[index].isCompleted;
+
+        // Optimistic update
+        setForm(f => {
+            const newSubtasks = [...f.subtasks];
+            newSubtasks[index] = { ...newSubtasks[index], isCompleted: !currentComplete };
+            return { ...f, subtasks: newSubtasks };
+        });
+
+        const updatedSubtasks = [...form.subtasks];
+        updatedSubtasks[index].isCompleted = !currentComplete;
+
+        try {
+            const res = await updateTask(task._id, { subtasks: updatedSubtasks });
+            onUpdated(res.data);
+        } catch {
+            // Revert state
+            setForm(f => ({ ...f, subtasks: task.subtasks || [] }));
         }
     }
 
@@ -186,6 +235,72 @@ export default function TaskDetailModal({ task, onClose, onUpdated, onDeleted })
                                 {form.description || <span className={styles.empty}>No description</span>}
                             </p>
                         )}
+                    </div>
+
+                    {/* Subtasks */}
+                    <div className={styles.section}>
+                        <div className={styles.sectionHeaderRow}>
+                            <p className={styles.sectionLabel} style={{ marginBottom: 0 }}>Subtasks</p>
+                            {editing && (
+                                <button className={styles.addSubtaskBtn} onClick={handleAddSubtask} type="button">
+                                    + Add
+                                </button>
+                            )}
+                        </div>
+                        {form.subtasks && form.subtasks.length > 0 ? (
+                            <div className={styles.subtasksList}>
+                                {form.subtasks.map((st, idx) => (
+                                    <div key={idx} className={`${styles.subtaskRow} ${st.isCompleted ? styles.subtaskDone : ''}`}>
+                                        <button
+                                            className={styles.subtaskCheckBtn}
+                                            onClick={() => {
+                                                if (editing) handleUpdateSubtask(idx, 'isCompleted', !st.isCompleted);
+                                                else handleToggleSubtask(idx);
+                                            }}
+                                        >
+                                            {st.isCompleted ? (
+                                                <svg viewBox="0 0 24 24" fill="none" className={styles.subtaskIconChecked}>
+                                                    <circle cx="12" cy="12" r="10" fill="currentColor" opacity="0.2" />
+                                                    <path d="M8 12.5l3 3 5-6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                                                </svg>
+                                            ) : (
+                                                <svg viewBox="0 0 24 24" fill="none" className={styles.subtaskIconUnchecked}>
+                                                    <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" />
+                                                </svg>
+                                            )}
+                                        </button>
+
+                                        {editing ? (
+                                            <input
+                                                className={styles.subtaskInput}
+                                                value={st.title}
+                                                onChange={(e) => handleUpdateSubtask(idx, 'title', e.target.value)}
+                                                placeholder="Subtask title"
+                                                autoFocus={!st.title}
+                                            />
+                                        ) : (
+                                            <span className={styles.subtaskTitle}>{st.title}</span>
+                                        )}
+
+                                        {editing && (
+                                            <button
+                                                className={styles.subtaskDeleteBtn}
+                                                onClick={() => handleRemoveSubtask(idx)}
+                                                aria-label="Remove subtask"
+                                            >
+                                                <svg viewBox="0 0 24 24" fill="none">
+                                                    <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                                </svg>
+                                            </button>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        ) : !editing ? (
+                            <p className={styles.sectionValue}>
+                                <span className={styles.empty}>No subtasks</span>
+                            </p>
+                        ) : null}
                     </div>
 
                     {/* Status + Priority */}

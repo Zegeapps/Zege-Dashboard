@@ -497,3 +497,123 @@
     border-radius: 50%;
     z-index: 2;
 }
+
+/* ── Subtasks ───────────────────────────────────── */
+.sectionHeaderRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+.addSubtaskBtn {
+    background: transparent;
+    border: none;
+    color: #013064;
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+
+.addSubtaskBtn:hover {
+    background: #E6F2FB;
+}
+
+.subtasksList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.subtaskRow {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+}
+
+.subtaskCheckBtn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #9ca3af;
+    transition: color 0.2s transform 0.1s;
+}
+
+.subtaskCheckBtn:active {
+    transform: scale(0.9);
+}
+
+.subtaskIconUnchecked,
+.subtaskIconChecked {
+    width: 22px;
+    height: 22px;
+}
+
+.subtaskIconChecked {
+    color: #1b5e20;
+}
+
+.subtaskDone .subtaskTitle {
+    text-decoration: line-through;
+    color: #9ca3af;
+}
+
+.subtaskTitle {
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    color: #0d0d0d;
+    flex: 1;
+    word-break: break-word;
+    transition: color 0.2s;
+}
+
+.subtaskInput {
+    font-family: 'Manrope', sans-serif;
+    font-size: 14px;
+    color: #0d0d0d;
+    background: #f9f9f9;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 6px 10px;
+    flex: 1;
+    outline: none;
+    transition: border-color 0.15s;
+}
+
+.subtaskInput:focus {
+    border-color: #013064;
+    background: #fff;
+}
+
+.subtaskDeleteBtn {
+    background: none;
+    border: none;
+    padding: 4px;
+    color: #9ca3af;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s;
+}
+
+.subtaskDeleteBtn:hover {
+    background: #fce4ec;
+    color: #e53935;
+}
+
+.subtaskDeleteBtn svg {
+    width: 16px;
+    height: 16px;
+}
