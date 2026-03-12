@@ -1,6 +1,7 @@
 import connectDB from '../lib/mongodb.js';
 import Task from '../models/Task.js';
 import User from '../models/User.js';
+import { sendTaskNotification } from '../lib/email.js';
 
 export default async function handler(req, res) {
     await connectDB();
@@ -17,14 +18,33 @@ export default async function handler(req, res) {
         if (req.method === 'POST') {
             const newTask = new Task(req.body);
             const savedTask = await newTask.save();
+
+            // Notify via email
+            await sendTaskNotification({
+                taskName: savedTask.title,
+                status: savedTask.status,
+                action: 'created'
+            });
+
             const populated = await savedTask.populate('assignedTo', 'username avatar');
             return res.status(201).json(populated);
         }
 
         if (req.method === 'PUT') {
             if (!id) return res.status(400).json({ message: 'Task ID is required' });
+
+            // Check if task is being completed
             const updatedTask = await Task.findByIdAndUpdate(id, req.body, { new: true })
                 .populate('assignedTo', 'username avatar');
+
+            if (req.body.status === 'Done') {
+                await sendTaskNotification({
+                    taskName: updatedTask.title,
+                    status: updatedTask.status,
+                    action: 'completed'
+                });
+            }
+
             return res.status(200).json(updatedTask);
         }
 
