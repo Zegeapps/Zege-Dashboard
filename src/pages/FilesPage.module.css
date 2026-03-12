@@ -11,7 +11,10 @@
 .navigationRow {
     display: flex;
     align-items: center;
-    padding-bottom: 0.5rem;
+    justify-content: space-between;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #f3f4f6;
+    margin-bottom: 0.5rem;
 }
 
 .navBackBtn {
@@ -30,6 +33,42 @@
 
 .navBackBtn:hover {
     background: #e5e7eb;
+}
+
+.navActions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.navActionBtn {
+    background: white;
+    border: 1.5px solid #e5e7eb;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #4b5563;
+    font-size: 0.9rem;
+    font-weight: 700;
+    transition: all 0.2s;
+}
+
+.navActionBtn:hover {
+    border-color: #013064;
+    color: #013064;
+    background: #f8fafc;
+}
+
+.navDeleteBtn {
+    color: #ef4444;
+}
+
+.navDeleteBtn:hover {
+    border-color: #ef4444;
+    color: #ef4444;
+    background: #fef2f2;
 }
 
 /* Breadcrumb Styles */
@@ -96,8 +135,114 @@
 
 .grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 0.75rem;
+}
+
+.contentWrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+}
+
+.sectionHeading {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #013064;
+    margin-bottom: 1.25rem;
+    font-family: 'Manrope', sans-serif;
+}
+
+.folderSection {
+    width: 100%;
+}
+
+.folderList {
+    display: flex;
     gap: 1.5rem;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+    scrollbar-width: thin;
+    scrollbar-color: #e5e7eb transparent;
+}
+
+.folderList::-webkit-scrollbar {
+    height: 6px;
+}
+
+.folderList::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 10px;
+}
+
+.folderCard {
+    flex: 0 0 auto;
+    width: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.folderCard:hover {
+    transform: translateY(-4px);
+}
+
+.folderImageWrapper {
+    width: 100%;
+    height: 180px;
+    background: #f3f4f6;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+    padding: 1.5rem;
+}
+
+.folderImage {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+.folderName {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #111827;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.folderDeleteBtn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    background: white;
+    border: none;
+    border-radius: 50%;
+    color: #ef4444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.folderCard:hover .folderDeleteBtn {
+    opacity: 1;
+}
+
+.fileSection {
+    width: 100%;
 }
 
 .fileCard {
@@ -111,6 +256,8 @@
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
     position: relative;
     transition: transform 0.2s, box-shadow 0.2s;
+    width: 100%;
+    max-width: 220px;
 }
 
 .fileCard:hover {
@@ -218,23 +365,40 @@
 }
 
 .fab {
-    width: 64px;
-    height: 64px;
+    position: fixed;
+    right: 20px;
+    bottom: 28px;
+    width: 60px;
+    height: 60px;
     border-radius: 50%;
-    background: #013064;
-    color: white;
+    background-color: #013064;
     border: none;
-    box-shadow: 0 10px 15px -3px rgba(1, 48, 100, 0.4);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0px 8px 24px rgba(1, 48, 100, 0.35);
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    z-index: 3000;
 }
 
 .fab:hover {
-    transform: scale(1.05);
-    box-shadow: 0 15px 20px -3px rgba(1, 48, 100, 0.5);
+    transform: scale(1.06);
+    box-shadow: 0px 12px 28px rgba(1, 48, 100, 0.45);
+}
+
+.fab:active {
+    transform: scale(0.97);
+}
+
+.fabWrapper {
+    pointer-events: none;
+    /* Let clicks pass through to content when menu is closed */
+}
+
+.fab,
+.fabMenu {
+    pointer-events: auto;
 }
 
 /* Custom Prompt/Confirm Modals */

@@ -5,6 +5,7 @@ import styles from './FilesPage.module.css';
 
 export default function FilesPage() {
     const [currentPath, setCurrentPath] = useState('/');
+    const [folderHistory, setFolderHistory] = useState([]); // Stores folder objects
     const [viewMode, setViewMode] = useState('grid');
     const [previewFile, setPreviewFile] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -24,6 +25,9 @@ export default function FilesPage() {
         queryFn: () => fileService.getFiles(currentPath)
     });
 
+    const folders = files.filter(f => f.isFolder);
+    const plainFiles = files.filter(f => !f.isFolder);
+
     const createFolderMutation = useMutation({
         mutationFn: fileService.createFolder,
         onMutate: (folder) => {
@@ -38,15 +42,34 @@ export default function FilesPage() {
         onSettled: () => setActiveTask(null)
     });
 
-    const deleteMutation = useMutation({
-        mutationFn: fileService.deleteFile,
-        onMutate: (id) => {
-            const file = files.find(f => f._id === id);
-            setActiveTask({ name: file?.showcaseName || 'Item', type: 'delete' });
-            setShowDeleteConfirm(null);
+    const renameFolderMutation = useMutation({
+        mutationFn: ({ id, name }) => fileService.renameFile(id, name),
+        onMutate: () => {
+            setActiveTask({ name: folderNameInput, type: 'folder' }); // Using folder icon for rename too
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['files', currentPath]);
+            // Also need to update current folder object in history if it was the one renamed
+            setFolderHistory(prev => prev.map(f => f._id === currentFolder?._id ? { ...f, showcaseName: folderNameInput } : f));
+            setShowFolderModal(false);
+            setFolderNameInput('');
+        },
+        onSettled: () => setActiveTask(null)
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: fileService.deleteFile,
+        onMutate: (id) => {
+            const file = files.find(f => f._id === id) || (currentFolder?._id === id ? currentFolder : null);
+            setActiveTask({ name: file?.showcaseName || 'Item', type: 'delete' });
+            setShowDeleteConfirm(null);
+        },
+        onSuccess: (data, id) => {
+            queryClient.invalidateQueries(['files', currentPath]);
+            // If we deleted the folder we are currently in, go back
+            if (currentFolder?._id === id) {
+                goBack();
+            }
         },
         onSettled: () => setActiveTask(null)
     });
@@ -100,7 +123,14 @@ export default function FilesPage() {
     };
 
     const handleNewFolder = () => {
-        if (folderNameInput.trim()) {
+        if (!folderNameInput.trim()) return;
+
+        if (showFolderModal === 'rename') {
+            renameFolderMutation.mutate({
+                id: currentFolder._id,
+                name: folderNameInput.trim()
+            });
+        } else {
             createFolderMutation.mutate({
                 showcaseName: folderNameInput.trim(),
                 originalName: folderNameInput.trim(),
@@ -110,16 +140,20 @@ export default function FilesPage() {
         }
     };
 
-    const navigateToFolder = (folderName) => {
-        setCurrentPath(`${currentPath}${folderName}/`);
+    const navigateToFolder = (folder) => {
+        setFolderHistory(prev => [...prev, folder]);
+        setCurrentPath(`${currentPath}${folder.showcaseName}/`);
     };
 
     const goBack = () => {
         if (currentPath === '/') return;
         const parts = currentPath.split('/').filter(Boolean);
         parts.pop();
+        setFolderHistory(prev => prev.slice(0, -1));
         setCurrentPath(`/${parts.join('/')}${parts.length ? '/' : ''}`);
     };
+
+    const currentFolder = folderHistory[folderHistory.length - 1];
 
     return (
         <section className={styles.container}>
@@ -129,6 +163,25 @@ export default function FilesPage() {
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M19 12H5M12 19l-7-7 7-7" /></svg>
                         <span>Back</span>
                     </button>
+                    <div className={styles.navActions}>
+                        <button
+                            className={styles.navActionBtn}
+                            onClick={() => {
+                                setFolderNameInput(currentFolder?.showcaseName || '');
+                                setShowFolderModal('rename');
+                            }}
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
+                            <span>Edit</span>
+                        </button>
+                        <button
+                            className={`${styles.navActionBtn} ${styles.navDeleteBtn}`}
+                            onClick={() => setShowDeleteConfirm(currentFolder)}
+                        >
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                            <span>Delete</span>
+                        </button>
+                    </div>
                 </div>
             )}
             <div className={styles.scrollArea}>
@@ -140,37 +193,60 @@ export default function FilesPage() {
                         <p>No files or folders here yet.</p>
                     </div>
                 ) : (
-                    <div className={styles.grid}>
-                        {files.map(file => (
-                            <div key={file._id} className={styles.fileCard}>
-                                <div className={styles.fileIcon} onClick={() => file.isFolder ? navigateToFolder(file.showcaseName) : setPreviewFile(file)}>
-                                    {file.isFolder ? (
-                                        <svg width="48" height="48" viewBox="0 0 24 24" fill="#6366f1"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" /></svg>
-                                    ) : file.type === 'pdf' ? (
-                                        <svg width="48" height="48" viewBox="0 0 24 24" fill="#ef4444"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z" /></svg>
-                                    ) : (
-                                        <img src={file.url} alt={file.showcaseName} className={styles.thumbnail} />
-                                    )}
-                                </div>
-                                <div className={styles.fileInfo}>
-                                    <span className={styles.fileName}>{file.showcaseName}</span>
-                                    {!file.isFolder && <span className={styles.fileSize}>{(file.size / 1024).toFixed(1)} KB</span>}
-                                </div>
-                                <div className={styles.fileActions}>
-                                    <button
-                                        onClick={() => setShowDeleteConfirm(file)}
-                                        className={styles.deleteBtn}
-                                    >
-                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
-                                    </button>
-                                    {!file.isFolder && (
-                                        <a href={file.url} download={file.originalName} className={styles.downloadBtn}>
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4M7 10l5 5 5-5M12 15V3" /></svg>
-                                        </a>
-                                    )}
+                    <div className={styles.contentWrapper}>
+                        {folders.length > 0 && (
+                            <div className={styles.folderSection}>
+                                <h3 className={styles.sectionHeading}>Folders</h3>
+                                <div className={styles.folderList}>
+                                    {folders.map(folder => (
+                                        <div
+                                            key={folder._id}
+                                            className={styles.folderCard}
+                                            onClick={() => navigateToFolder(folder)}
+                                        >
+                                            <div className={styles.folderImageWrapper}>
+                                                <img src="/open-folder.png" alt="Folder" className={styles.folderImage} />
+                                            </div>
+                                            <span className={styles.folderName}>{folder.showcaseName}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
-                        ))}
+                        )}
+
+                        {plainFiles.length > 0 && (
+                            <div className={styles.fileSection}>
+                                <h3 className={styles.sectionHeading}>Files</h3>
+                                <div className={styles.grid}>
+                                    {plainFiles.map(file => (
+                                        <div key={file._id} className={styles.fileCard}>
+                                            <div className={styles.fileIcon} onClick={() => setPreviewFile(file)}>
+                                                {file.type === 'pdf' ? (
+                                                    <svg width="48" height="48" viewBox="0 0 24 24" fill="#ef4444"><path d="M20 2H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8.5 7.5c0 .83-.67 1.5-1.5 1.5H9v2H7.5V7H10c.83 0 1.5.67 1.5 1.5v1zm5 2c0 .83-.67 1.5-1.5 1.5h-2.5V7H15c.83 0 1.5.67 1.5 1.5v3zm4-3H19v1h1.5V11H19v2h-1.5V7h3v1.5zM9 9.5h1v-1H9v1zM4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm10 5.5h1v-3h-1v3z" /></svg>
+                                                ) : (
+                                                    <img src={file.url} alt={file.showcaseName} className={styles.thumbnail} />
+                                                )}
+                                            </div>
+                                            <div className={styles.fileInfo}>
+                                                <span className={styles.fileName}>{file.showcaseName}</span>
+                                                <span className={styles.fileSize}>{(file.size / 1024).toFixed(1)} KB</span>
+                                            </div>
+                                            <div className={styles.fileActions}>
+                                                <button
+                                                    onClick={() => setShowDeleteConfirm(file)}
+                                                    className={styles.deleteBtn}
+                                                >
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                                                </button>
+                                                <a href={file.url} download={file.originalName} className={styles.downloadBtn}>
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4M7 10l5 5 5-5M12 15V3" /></svg>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
@@ -199,7 +275,7 @@ export default function FilesPage() {
                     className={`${styles.fab} ${isFabOpen ? styles.fabActive : ''}`}
                     onClick={() => setIsFabOpen(!isFabOpen)}
                 >
-                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.5">
                         <path d="M12 5v14M5 12h14" />
                     </svg>
                 </button>
@@ -209,7 +285,7 @@ export default function FilesPage() {
             {showFolderModal && (
                 <div className={styles.customModalOverlay}>
                     <div className={styles.customModal}>
-                        <h3 className={styles.modalTitle}>New Folder</h3>
+                        <h3 className={styles.modalTitle}>{showFolderModal === 'rename' ? 'Rename Folder' : 'New Folder'}</h3>
                         <input
                             type="text"
                             className={styles.modalInput}
@@ -220,7 +296,9 @@ export default function FilesPage() {
                         />
                         <div className={styles.modalActions}>
                             <button onClick={() => setShowFolderModal(false)} className={styles.cancelBtn}>Cancel</button>
-                            <button onClick={handleNewFolder} className={styles.confirmBtn}>Create</button>
+                            <button onClick={handleNewFolder} className={styles.confirmBtn}>
+                                {showFolderModal === 'rename' ? 'Save' : 'Create'}
+                            </button>
                         </div>
                     </div>
                 </div>
