@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { getTasks } from '../services/taskService';
 import { getCurrentUser } from '../services/authService';
+import ActivityHeatmap from '../components/ActivityHeatmap';
 import styles from './HomePage.module.css';
 
 export default function HomePage() {
@@ -61,6 +62,8 @@ export default function HomePage() {
                     </p>
                 </div>
             </div>
+
+            <ActivityHeatmap />
 
         </section>
     );
